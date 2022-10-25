@@ -133,6 +133,8 @@ KEY_MIN_MIREDS = "min_mirs"
 KEY_MIN_TEMP = "min_temp"
 KEY_MODE_STATE_TEMPLATE = "mode_stat_tpl"
 KEY_MODE_STATE_TOPIC = "mode_stat_t"
+KEY_MODE_COMMAND_TEMPLATE = "mode_cmd_tpl"
+KEY_MODE_COMMAND_TOPIC = "mode_cmd_t"
 KEY_MODEL = "mdl"
 KEY_MODES = "modes"
 KEY_NAME = "name"
@@ -484,8 +486,12 @@ TOPIC_VOLTAGE = "~voltage"
 TOPIC_WHITE_SET = "~white/{light_id}/set"
 TOPIC_WHITE_STATUS = "~white/{light_id}/status"
 
+MODE_HEAT_DEFAULT_TEMP = 20
+
 TPL_ACCELERATED_HEATING = "{{value_json.thermostats.0.target_t.accelerated_heating}}"
 TPL_ACTION_TEMPLATE = "{{%if value_json.thermostats.0.target_t.value<={min_temp}%}}off{{%elif value_json.thermostats.0.pos==0%}}idle{{%else%}}heating{{%endif%}}"
+TPL_MODE_TEMPLATE = "{{%if value == ^off^%}}{min_temp}{{%else%}}{default_temp}{{%endif%}}"
+TPL_MODE_STATE_TEMPLATE = "{{%if value_json.thermostats.0.target_t.value<={min_temp}%}}off{{%else%}}heat{{%endif%}}"
 TPL_ADC = "{{value|float|round(2)}}"
 TPL_BATTERY = "{{value|float|round}}"
 TPL_BATTERY_FROM_INFO = "{{value_json.bat.value}}"
@@ -2498,7 +2504,7 @@ if model_id == MODEL_SHELLYVALVE_ID:
     climate_entity_option = {
         KEY_MAX_TEMP: 31,
         KEY_MIN_TEMP: 4,
-        KEY_MODES: ["heat"],
+        KEY_MODES: ["off", "heat"],
         KEY_PRECISION: 0.1,
         KEY_TEMP_STEP: 0.5,
     }
@@ -2774,7 +2780,9 @@ if climate_entity_option:
         KEY_TEMPERATURE_COMMAND_TEMPLATE: TPL_SET_TARGET_TEMPERATURE,
         KEY_TEMP_STEP: climate_entity_option[KEY_TEMP_STEP],
         KEY_MODE_STATE_TOPIC: TOPIC_INFO,
-        KEY_MODE_STATE_TEMPLATE: "heat",
+        KEY_MODE_STATE_TEMPLATE: TPL_MODE_STATE_TEMPLATE.format(
+            min_temp=climate_entity_option[KEY_MIN_TEMP]
+        ),
         KEY_UNIQUE_ID: f"{dev_id}".lower(),
         KEY_OPTIMISTIC: VALUE_FALSE,
         KEY_QOS: qos,
@@ -2782,6 +2790,11 @@ if climate_entity_option:
         KEY_PAYLOAD_AVAILABLE: VALUE_TRUE,
         KEY_PAYLOAD_NOT_AVAILABLE: VALUE_FALSE,
         KEY_DEVICE: device_info,
+        KEY_MODE_COMMAND_TOPIC: temperature_command_topic,
+        KEY_MODE_COMMAND_TEMPLATE: TPL_MODE_TEMPLATE.format(
+            min_temp=climate_entity_option[KEY_MIN_TEMP],
+            default_temp=MODE_HEAT_DEFAULT_TEMP
+        ),
         "~": default_topic,
     }
     payload.update(climate_entity_option)
