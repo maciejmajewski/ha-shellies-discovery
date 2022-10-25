@@ -100,6 +100,7 @@ KEY_ACTION_TEMPLATE = "act_tpl"
 KEY_ACTION_TOPIC = "act_t"
 KEY_AUTOMATION_TYPE = "atype"
 KEY_AVAILABILITY_TOPIC = "avty_t"
+KEY_AVAILABILITY_TEMPLATE = "avty_tpl"
 KEY_BRIGHTNESS_TEMPLATE = "bri_tpl"
 KEY_COLOR_TEMP_TEMPLATE = "clr_temp_tpl"
 KEY_COMMAND_OFF_TEMPLATE = "cmd_off_tpl"
@@ -337,6 +338,7 @@ MODEL_SHELLYUNI_ID = "SHUNI-1"  # Shelly UNI
 MODEL_SHELLYUNI_PREFIX = "shellyuni"
 
 NUMBER_BOOST_TIME = "boost_time"
+NUMBER_EXTERNAL_TEMPERATURE = "set_external_temperature"
 NUMBER_MINIMAL_VALVE_POSITION = "minimal_valve_position"
 NUMBER_VALVE_POSITION = "valve_position"
 
@@ -417,6 +419,7 @@ TOPIC_COLOR_0_STATUS = "~color/0/status"
 TOPIC_COMMAND = "~command"
 TOPIC_COMMAND_ACCELERATED_HEATING = "~thermostat/0/command/accelerated_heating"
 TOPIC_COMMAND_BOOST_MINUTES = "~thermostat/0/command/boost_minutes"
+TOPIC_COMMAND_EXTERNAL_TEMPERATURE = "~thermostat/0/command/ext_t"
 TOPIC_COMMAND_PROFILES = "~thermostat/0/command/schedule_profile"
 TOPIC_COMMAND_SCHEDULE = "~thermostat/0/command/schedule"
 TOPIC_COMMAND_VALVE_MIN = "~thermostat/0/command/valve_min_percent"
@@ -515,6 +518,7 @@ TPL_ENERGY_WH = "{{value|float|round(2)}}"
 TPL_ENERGY_WH_KWH = "{{(value|float/1000)|round(2)}}"
 TPL_ENERGY_WMIN = "{{(value|float/60)|round(2)}}"
 TPL_ENERGY_WMIN_KWH = "{{(value|float/60/1000)|round(2)}}"
+TPL_EXT_T = "{{value_json.thermostats.0.ext_t.enabled}}"
 TPL_GAS = "{%if value in [^mild^,^heavy^]%}ON{%else%}OFF{%endif%}"
 TPL_GAS_TO_JSON = "{{{^status^:value}|tojson}}"
 TPL_HUMIDITY = "{%if is_number(value) and 0<value|int<999%}{{value|round(1)}}{%else%}unknown{%endif%}"
@@ -679,6 +683,20 @@ OPTIONS_BOOST_TIME = {
     KEY_STATE_TOPIC: TOPIC_INFO,
     KEY_VALUE_TEMPLATE: TPL_BOOST_MINUTES,
     KEY_UNIT: UNIT_MINUTES,
+}
+OPTIONS_EXTERNAL_TEMPERATURE = {
+    KEY_COMMAND_TOPIC: TOPIC_COMMAND_EXTERNAL_TEMPERATURE,
+    KEY_ENABLED_BY_DEFAULT: True,
+    KEY_MIN: 0,
+    KEY_MAX: 50,
+    KEY_STEP: 0.1,
+    KEY_ENTITY_CATEGORY: ENTITY_CATEGORY_CONFIG,
+    KEY_ICON: "mdi:thermometer-plus",
+    KEY_STATE_TOPIC: TOPIC_INFO,
+    KEY_VALUE_TEMPLATE: TPL_CURRENT_TEMPERATURE,
+    KEY_UNIT: UNIT_CELSIUS,
+    KEY_AVAILABILITY_TOPIC: TOPIC_SETTINGS,
+    KEY_AVAILABILITY_TEMPLATE: TPL_EXT_T,
 }
 OPTIONS_SELECT_PROFILES = {
     KEY_COMMAND_TOPIC: TOPIC_COMMAND_PROFILES,
@@ -2534,6 +2552,7 @@ if model_id == MODEL_SHELLYVALVE_ID:
         NUMBER_VALVE_POSITION: OPTIONS_NUMBER_VALVE_POSITION,
         NUMBER_MINIMAL_VALVE_POSITION: OPTIONS_NUMBER_MINIMAL_VALVE_POSITION,
         NUMBER_BOOST_TIME: OPTIONS_BOOST_TIME,
+        NUMBER_EXTERNAL_TEMPERATURE: OPTIONS_EXTERNAL_TEMPERATURE,
     }
     updates = {UPDATE_FIRMWARE: OPTIONS_UPDATE_FIRMWARE}
 
@@ -2642,12 +2661,14 @@ for number, number_options in numbers.items():
         KEY_ENABLED_BY_DEFAULT: str(number_options[KEY_ENABLED_BY_DEFAULT]).lower(),
         KEY_UNIQUE_ID: f"{dev_id}-{number}".lower(),
         KEY_QOS: qos,
-        KEY_AVAILABILITY_TOPIC: TOPIC_ONLINE,
+        KEY_AVAILABILITY_TOPIC: number_options.get(KEY_AVAILABILITY_TOPIC, TOPIC_ONLINE),
         KEY_PAYLOAD_AVAILABLE: VALUE_TRUE,
         KEY_PAYLOAD_NOT_AVAILABLE: VALUE_FALSE,
         KEY_DEVICE: device_info,
         "~": default_topic,
     }
+    if number_options.get(KEY_AVAILABILITY_TEMPLATE):
+        payload[KEY_AVAILABILITY_TEMPLATE] = number_options[KEY_AVAILABILITY_TEMPLATE]
     if number_options.get(KEY_ENTITY_CATEGORY):
         payload[KEY_ENTITY_CATEGORY] = number_options[KEY_ENTITY_CATEGORY]
     if number_options.get(KEY_DEVICE_CLASS):
