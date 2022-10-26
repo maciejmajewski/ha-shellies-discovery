@@ -548,7 +548,7 @@ TPL_RSSI = "{%if value_json.wifi_sta.rssi!=0%}{{value_json.wifi_sta.rssi}}{%else
 TPL_SELF_TEST = "{{value.replace(^_^,^ ^)}}"
 TPL_SET_TARGET_TEMPERATURE = "{{value}}"
 TPL_SSID = "{{value_json.wifi_sta.ssid}}"
-TPL_TARGET_TEMPERATURE = "{{value_json.thermostats.0.target_t.value}}"
+TPL_TARGET_TEMPERATURE = "{{{{ iif(value_json.thermostats.0.target_t.value <= {min_temp}, value_json.thermostats.0.tmp.value, value_json.thermostats.0.target_t.value) }}}}"
 TPL_TEMPERATURE = "{%if is_number(value) and -100<value|int<900%}{{value|round(1)}}{%else%}unknown{%endif%}"
 TPL_TEMPERATURE_MOTION = "{{value_json.tmp.value}}"
 TPL_TEMPERATURE_EXT = "{%if is_number(value) and -100<value|int<999%}{{value|float|round(1)}}{%else%}unknown{%endif%}"
@@ -2775,7 +2775,9 @@ if climate_entity_option:
         KEY_CURRENT_TEMPERATURE_TOPIC: TOPIC_INFO,
         KEY_CURRENT_TEMPERATURE_TEMPLATE: TPL_CURRENT_TEMPERATURE,
         KEY_TEMPERATURE_STATE_TOPIC: TOPIC_INFO,
-        KEY_TEMPERATURE_STATE_TEMPLATE: TPL_TARGET_TEMPERATURE,
+        KEY_TEMPERATURE_STATE_TEMPLATE: TPL_TARGET_TEMPERATURE.format(
+            min_temp=climate_entity_option[KEY_MIN_TEMP]
+        ),
         KEY_TEMPERATURE_COMMAND_TOPIC: temperature_command_topic,
         KEY_TEMPERATURE_COMMAND_TEMPLATE: TPL_SET_TARGET_TEMPERATURE,
         KEY_TEMP_STEP: climate_entity_option[KEY_TEMP_STEP],
